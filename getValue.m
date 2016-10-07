@@ -29,7 +29,7 @@ cannyIm = edge(greyBlueIm,'canny',0.2);
 
 %% remove small object
 clearIm = bwareaopen(cannyIm,50);
-imshow(clearIm);hold on
+%imshow(clearIm);hold on
 
 
 %% find circle using centroid
