@@ -8,22 +8,34 @@ clear
 close all
 load('cameraParam.mat');
 %%
+% create Kin2 object with color and depth
 k2 = Kin2('color','depth');
+
+% color size
 color_width = 1920; color_height = 1080;
+
+% depth size
 d_width = 512; d_height = 424; outOfRange = 4000;
+
+% color scale
 colorScale = 0.5;
+
+% pre-allocate color and depth for faster processing
 color = zeros(color_height*colorScale,color_width*colorScale,3,'uint8');
 depth = zeros(d_height,d_width,'uint16');
 
+% show color figure
 figure, h2 = imshow(color,[]);
-title('Color Source (press q to exit)');
+title('Domino Detector (press q to exit)');
 set(gcf,'keypress','k=get(gcf,''currentchar'');'); % listen keypress
 
 k=[];
 
 disp('Press q on any figure to exit')
+
+% create detector object
 detector = vision.CascadeObjectDetector('dominoDetector1978_0.2_10.xml');
-%detector = vision.CascadeObjectDetector('dominoDetector1978_1976_0.1_10.xml');
+
 while true
     % Get frames from Kinect and save them on underlying buffer
     validData = k2.updateData;
@@ -31,42 +43,42 @@ while true
     % Before processing the data, we need to make sure that a valid
     % frame was acquired.
     if validData
+        
         % Copy data to Matlab matrices        
         color = k2.getColor;
         depth = k2.getDepth;
         
-        % update color figure
+        % update color figure and undistrot
         color = undistortImage(imresize(color,colorScale),cameraParams);
-        %color = imresize(color,colorScale);
-        %color = color(:, :, 3);
+        %color = (imresize(color,colorScale));
+        
+        % use detector with color picture to find dominos
         bbox = step(detector,color);
-
+        
+        % numbers of dominos
         [dominoNumber,n] = size(bbox);
 
         if dominoNumber ~= 0
             
+            % pre-allocate matrix for faster processing
             bboxcenter = zeros(dominoNumber,2,'uint16');
             realbboxcenter = zeros(dominoNumber,2,'uint16');
-            %depthCoords = zeros(dominoNumber,2,'uint16');
             depthValue = zeros(dominoNumber,1,'uint16');
             realLocation = zeros(dominoNumber,2,'int64');
             pixelX = zeros(dominoNumber,1,'double');
             pixelY = zeros(dominoNumber,1,'double');
             bboxx = zeros(dominoNumber);
             bboxy = zeros(dominoNumber);
+            label_str = cell(dominoNumber,1);
             
             for i = 1:dominoNumber
+                % detected domino bbox center
                 bboxcenter(i,:) = [floor(bbox(i,1) + (bbox(i,3)/2)),floor(bbox(i,2) + (bbox(i,4)/2))];
                 
-            end
-            
-            % real pixel on real picture
-            for i = 1:dominoNumber
+                % real pixel on real picture
                 realbboxcenter(i,:) = ([bboxcenter(i,1)/colorScale bboxcenter(i,2)/colorScale]);
-            end
-            
-            %depthCoords = k2.mapColorPoints2Depth(realbboxcenter);
-            for i = 1:dominoNumber
+                
+                % get depth value for each box by using mapColorPoints2Depth
                 singlePixelX = double(realbboxcenter(i,1));
                 singlePixelY = double(realbboxcenter(i,2));
                 pixelX(i) = double(realbboxcenter(i,1));
@@ -75,25 +87,17 @@ while true
                 if (depthCoords(1) ~= 0) && (depthCoords(2) ~= 0)
                     depthValue(i) = depth(depthCoords(2),depthCoords(1));
                 end
-            end
-
-            label_str = cell(dominoNumber,1);
-            for ii=1:dominoNumber
-                if depthValue(ii) == 0
-                    label_str{ii} = ['Domino: Depth sensor out of range. x: ' num2str(realbboxcenter(ii,1)) ', y:' num2str(realbboxcenter(ii,2))];
+                if depthValue(i) == 0
+                    label_str{i} = ['Domino: Depth sensor out of range. x: ' num2str(realbboxcenter(i,1)) ', y:' num2str(realbboxcenter(i,2))];
                 else
-                    label_str{ii} = ['Domino' num2str(ii) ':' num2str(depthValue(ii)) 'mm, x: ' num2str(realbboxcenter(ii,1)) ', y:' num2str(realbboxcenter(ii,2))];
+                    label_str{i} = ['Domino' num2str(i) ':' num2str(depthValue(i)) 'mm, x: ' num2str(realbboxcenter(i,1)) ', y:' num2str(realbboxcenter(i,2))];
                 end
             end
-
-
 
             detectedImg = insertObjectAnnotation(color,'rectangle',bbox,label_str,'TextBoxOpacity',0.8,'FontSize',10);
 
             color = insertMarker(detectedImg,bboxcenter,'x','color','red','size',5);
-            
-            
-            
+
 %             for ii=1:dominoNumber
 %                 camMatrix = cameraMatrix(cameraParams,cameraParams.RotationMatrices(:,:,8),cameraParams.TranslationVectors(8,:));
 %                 c = camMatrix;
@@ -106,7 +110,7 @@ while true
 %             end
 
         end
-        %plot (bboxcenter(:,1),bboxcenter(:,2),'ro');
+        
         set(h2,'CData',color); 
         
 
@@ -116,25 +120,27 @@ while true
          if strcmp(k, 't')
 
              if(dominoNumber == 2)
-                 realX = zeros(dominoNumber,1);
-                 realY = zeros(dominoNumber,1);
+                 %realX = zeros(dominoNumber,1);
+                 %realY = zeros(dominoNumber,1);
                 for i = 1:dominoNumber
                     bboxx(i) = double(bboxcenter(i,1));
-                    realX(i) = realLocation(i,1);
+                    %realX(i) = realLocation(i,1);
                     bboxy(i) = double(bboxcenter(i,2));
-                    realY(i) = realLocation(i,2);
+                    %realY(i) = realLocation(i,2);
                 end
                 
                 h3 = line([bboxx(1),bboxx(2)],[bboxy(1),bboxy(2)],'Color','r','LineWidth',2);
-
-                length = sqrt(( realY(2)-realY(1) )^2 + (realX(2) - realX(1))^2);
-                h4 = legend(h3,num2str(length));
+                length = sqrt((pixelY(2)-pixelY(1))^2 + (pixelX(2)-pixelX(1))^2);
+                %reallength = sqrt(( realY(2)-realY(1) )^2 + (realX(2) - realX(1))^2);
+                %h4 = legend(h3,['real distance: ' num2str(reallength) ' mm']);
+                h5 = legend(h3,['pixel distance: ' num2str(length) ' pixel']);
                 k=[];
              end
          end
          if strcmp(k, 'c')
             delete(h3);
-            delete(h4);
+            %delete(h4);
+            delete(h5);
             k=[];
          end
          if strcmp(k,'k')
