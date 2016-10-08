@@ -29,4 +29,4 @@ cameraParam.mat:
 camera calibration parameters from defined workspace
 
 sensor_placement.m:
-return the real world X Y coordinates by projection matrix
+return the real world X Y coordinates of central frame by projection matrix with the depth value of the central from return from kinect
