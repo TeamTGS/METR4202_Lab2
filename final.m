@@ -2,6 +2,7 @@
 % Terven J. Cordova D.M., "Kin2. A Kinect 2 Toolbox for MATLAB", Science of
 % Computer Programming.
 % https://github.com/jrterven/Kin2, 2016.
+% some code are comment out for better performance in real time preview
 
 addpath('Kin2\Mex');
 clear
@@ -105,6 +106,7 @@ while true
                 
              end
             
+            % get domino value by getValue.m function
 %             for i = 1:dominoNumber
 %                 realbbox(i,:) = bbox(i,:)/colorScale;
 %                 getValIm = imcrop(color1,realbbox(i,:));
@@ -112,7 +114,7 @@ while true
 %             end
             
             for i = 1:dominoNumber
-                % get depth value for each box by using mapColorPoints2Depth
+                % get depth value for each box by using mapColorPoints2Depth from Kin2
                 singlePixelX = double(realbboxcenter(i,1));
                 singlePixelY = double(realbboxcenter(i,2));
                 pixelX(i) = double(realbboxcenter(i,1));
@@ -130,11 +132,13 @@ while true
                     label_str{i} = ['Domino' num2str(i) ':' num2str(depthValue(i)) 'mm, x: ' num2str(realbboxcenter(i,1)) ', y:' num2str(realbboxcenter(i,2)) ', speed: ' num2str(maxvector(i)) ];
                 end
             end
-
+            % draw a yellow box around detected dominos
             detectedImg = insertObjectAnnotation(color,'rectangle',bbox,label_str);
-
+            
+            % mark the center of each detected dominos
             %color = insertMarker(detectedImg,bboxcenter,'x','color','red','size',5);
 
+            % return the real world coordinates by the depth value return from kinect
 %             for ii=1:dominoNumber
 %                 camMatrix = cameraMatrix(cameraParams,cameraParams.RotationMatrices(:,:,1),cameraParams.TranslationVectors(1,:));
 %                 c = camMatrix;
@@ -146,6 +150,8 @@ while true
 %                 
 %                 realLocation(i,:) = [double(X),double(Y)];
 %             end
+
+        % draw to the figure
         set(h2,'CData',detectedImg);
         end
         
@@ -155,6 +161,7 @@ while true
     end
     % If user presses 'q', exit loop
     if ~isempty(k)
+           % if user press 't', calculate the pixel and real world distance of two dominos
          if strcmp(k, 't')
 
              if(dominoNumber == 2)
@@ -177,6 +184,7 @@ while true
                 k=[];
              end
          end
+         % if user press c, clear the line and legend from above
          if strcmp(k, 'c')
             %delete(h3);
             %delete(h4);
