@@ -48,7 +48,7 @@ j=0;
 %plot(centroids(:,1),centroids(:,2),'b*')
 for i=1:m
    
-    if (AxisLength(i,1) / AxisLength(i,2) )> 1.2 % ratio of maj
+    if (AxisLength(i,1) / AxisLength(i,2) )> 1.2 % ratio of major and minor axis to find object similar to a cir
        continue
     else
         j=j+1;
