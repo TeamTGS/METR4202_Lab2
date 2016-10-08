@@ -28,3 +28,5 @@ use opticflow to find the pixel speed of each domino
 cameraParam.mat:
 camera calibration parameters from defined workspace
 
+sensor_placement.m:
+return the real world X Y coordinates by the depths of the central frame
